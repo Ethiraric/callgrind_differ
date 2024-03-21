@@ -3,7 +3,10 @@
 use std::io::BufRead;
 
 use anyhow::Result;
+use clap::Parser;
 use itertools::Itertools;
+
+mod args;
 
 static mut SKIP_UNCHANGED_LINES: bool = true;
 
@@ -89,6 +92,7 @@ fn print_diff(name: &str, old: u64, new: u64, name_maxlen: usize) {
 }
 
 fn main() {
+    let a = args::Args::parse().validated().unwrap();
     let args: Vec<_> = std::env::args().collect();
     let (old, new) = if args.len() == 4 && args[1] == "-a" {
         unsafe { SKIP_UNCHANGED_LINES = false };
