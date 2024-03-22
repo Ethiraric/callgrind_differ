@@ -1,44 +1,26 @@
-#![allow(clippy::cast_precision_loss)]
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::cast_precision_loss,
+    clippy::cast_possible_truncation,
+    clippy::cast_lossless
+)]
+
+use std::path::Path;
 
 use anyhow::{bail, Result};
 use clap::Parser;
 
-use crate::runs::{Records, Run};
+use crate::{
+    args::{RelativeTo, SortByField},
+    display::display,
+    runs::{Records, Run},
+};
 use args::Args;
 
 mod args;
 mod callgrind;
+mod display;
 mod runs;
-
-fn print_diff(config: &Args, name: &str, old: u64, new: u64, name_maxlen: usize) {
-    if name != "Total IR" && !config.all && old == new {
-        return;
-    }
-
-    print!("{name}");
-    for _ in name.len()..name_maxlen {
-        print!(" ");
-    }
-
-    let diff = old.abs_diff(new);
-    let percent = if old == 0 {
-        100.0
-    } else {
-        (diff as f64) * 100.0 / (old as f64)
-    };
-
-    if diff == 0 {
-        print!(" {old:12} |                          | {new:12}");
-    } else if old > new {
-        print!(" {old:12} | \x1B[32m-{diff:>12} ({percent:7.3}%)\x1B[0m | {new:12}");
-    } else if percent < 1000.0 {
-        print!(" {old:12} | \x1B[31m+{diff:>12} ({percent:7.3}%)\x1B[0m | {new:12}");
-    } else {
-        let ratio = percent / 100.0;
-        print!(" {old:12} | \x1B[31;1m+{diff:>12} ({ratio:7.3}x)\x1B[0m | {new:12}");
-    }
-    println!();
-}
 
 /// Transforms an array of record files into a [`Records`].
 ///
@@ -47,7 +29,10 @@ fn print_diff(config: &Args, name: &str, old: u64, new: u64, name_maxlen: usize)
 fn inputs_to_records(inputs: &[String]) -> Result<Records> {
     let mut records = Records::new();
     for input in inputs {
-        if input.ends_with(".csv") {
+        if Path::new(input)
+            .extension()
+            .map_or(false, |ext| ext.eq_ignore_ascii_case("csv"))
+        {
             todo!("CSV Parsing");
         } else {
             records.add_run(Run::from_callgrind_annotate_file(input)?);
@@ -58,42 +43,23 @@ fn inputs_to_records(inputs: &[String]) -> Result<Records> {
 
 fn main() -> Result<()> {
     let config = Args::parse().validated()?;
-    let records = inputs_to_records(&config.inputs)?;
+    let mut records = inputs_to_records(&config.inputs)?;
     if records.n_runs() == 0 {
         bail!("No input run");
     }
-
-    let maxlen = old
-        .fn_ir
-        .iter()
-        .map(|(n, _)| n.len())
-        .max()
-        .unwrap()
-        .max(new.fn_ir.iter().map(|(n, _)| n.len()).max().unwrap());
-
-    print_diff(&config, "Total IR", old.total_ir, new.total_ir, maxlen);
-    for _ in 0..(maxlen + 36 + 8 + 11) {
-        print!("-");
+    if let RelativeTo::Column(x) = &config.relative_to {
+        if (*x as usize) >= records.n_runs() {
+            bail!("--relative-to column index out of range");
+        }
     }
-    println!();
-
-    for (name, ir) in &old.fn_ir {
-        if let Some((_, ir_new)) = new.fn_ir.iter().find(|(n, _)| name == n) {
-            print_diff(&config, name, *ir, *ir_new, maxlen);
+    if let SortByField::ColumnIR(x) = &config.sort_by.field {
+        if (*x as usize) >= records.n_runs() {
+            bail!("--sort-by column index out of range");
         }
     }
 
-    for (name, ir) in &old.fn_ir {
-        if !new.fn_ir.iter().any(|(n, _)| name == n) {
-            print_diff(&config, name, *ir, 0, maxlen);
-        }
-    }
-
-    for (name, new_ir) in &new.fn_ir {
-        if !old.fn_ir.iter().any(|(n, _)| name == n) {
-            print_diff(&config, name, 0, *new_ir, maxlen);
-        }
-    }
+    records.sort(config.sort_by)?;
+    display(&config, &records);
 
     Ok(())
 }

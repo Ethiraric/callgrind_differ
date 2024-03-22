@@ -1,13 +1,6 @@
-use anyhow::Result;
 use itertools::Itertools;
 
 use crate::runs::Run;
-
-#[derive(Debug)]
-struct CallgrindAnnotation {
-    total_ir: u64,
-    fn_ir: Vec<(String, u64)>,
-}
 
 /// Parse the total IR line.
 ///
@@ -60,7 +53,7 @@ fn parse_fn_ir_line(line: &str) -> (String, u64) {
 }
 
 /// Parse a `callgrind_annotate` file and return a `Run` from it.
-pub fn parse<R: std::io::BufRead>(input: R) -> Result<Run> {
+pub fn parse<R: std::io::BufRead>(input: R) -> Run {
     let mut run = Run::new();
     let mut lines = input
         .lines()
@@ -78,5 +71,5 @@ pub fn parse<R: std::io::BufRead>(input: R) -> Result<Run> {
         run.add_ir(&symbol, ir);
     }
 
-    Ok(run)
+    run
 }

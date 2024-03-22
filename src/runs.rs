@@ -22,6 +22,7 @@ impl Run {
     }
 
     /// Create a new run with a name.
+    #[allow(unused)]
     pub fn new_named(name: String) -> Self {
         Self {
             name,
@@ -42,7 +43,7 @@ impl Run {
     /// assert_eq!(run.symbols.iter().find(|sym| sym.name == "foo").unwrap().ir, 36);
     /// ```
     pub fn add_ir(&mut self, symbol: &str, ir: u64) {
-        if let Some(ref mut symbol) = self.symbols.iter().find(|sym| sym.name == symbol) {
+        if let Some(ref mut symbol) = self.symbols.iter_mut().find(|sym| sym.name == symbol) {
             symbol.ir += ir;
         } else {
             self.symbols.push(AnnotatedSymbol {
@@ -54,7 +55,7 @@ impl Run {
 
     /// Load a run from a `callgrind_annotate` output file.
     pub fn from_callgrind_annotate_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        crate::callgrind::parse(BufReader::new(File::open(path)?))
+        Ok(crate::callgrind::parse(BufReader::new(File::open(path)?)))
     }
 }
 
@@ -62,6 +63,7 @@ impl Run {
 ///
 /// The annotations do make sense only if they all refer to the same binary (though it may be at
 /// different stages of development).
+#[derive(Default)]
 pub struct Records {
     /// The names of the runs, if any. This is purely for human readability purposes.
     ///
@@ -77,10 +79,7 @@ pub struct Records {
 impl Records {
     /// Create a new records, ready to insert annotated runs.
     pub fn new() -> Self {
-        Self {
-            run_names: vec![],
-            symbols: vec![],
-        }
+        Records::default()
     }
 
     /// Add annotations about a run to the records.
@@ -91,7 +90,7 @@ impl Records {
             // Add an `irs` entry for each symbol.
             if let Some(ref mut symbol) = self
                 .symbols
-                .iter()
+                .iter_mut()
                 .find(|symbol| symbol.name == run_symbol.name)
             {
                 symbol.irs.push(run_symbol.ir);
@@ -162,23 +161,21 @@ impl Records {
 
         // The number of runs contained in `self.run_names` must match that of
         // `self.runs_total_irs`.
-        if n_runs != self.runs_total_irs.len() {
-            panic!(
-                "Invalid # of total irs (got {}, expected{n_runs})",
-                self.runs_total_irs.len()
-            );
-        }
+        assert!(
+            n_runs == self.runs_total_irs.len(),
+            "Invalid # of total irs (got {}, expected{n_runs})",
+            self.runs_total_irs.len()
+        );
 
         // The number of runs contained in `self.run_names` must match that of each symbol in
         // `self.symbols`.
         for symbol in &self.symbols {
-            if symbol.irs.len() != n_runs {
-                panic!(
-                    "Invalid # of runs for symbol {} (got {}, expected {n_runs})",
-                    symbol.name,
-                    symbol.irs.len()
-                );
-            }
+            assert!(
+                symbol.irs.len() == n_runs,
+                "Invalid # of runs for symbol {} (got {}, expected {n_runs})",
+                symbol.name,
+                symbol.irs.len()
+            );
         }
     }
 }

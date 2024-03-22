@@ -168,6 +168,39 @@ impl ToString for Show {
     }
 }
 
+/// Whether to color the output.
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Color {
+    /// Always color the output.
+    ///
+    /// TODO(ethiraric, 22/03/2024): Change to a saner default with `isatty`.
+    #[default]
+    Always,
+    /// Only color if the output is a terminal.
+    Default,
+    /// Never color.
+    Never,
+}
+
+impl FromStr for Color {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "always" => Ok(Self::Always),
+            "default" => Ok(Self::Default),
+            "never" => Ok(Self::Never),
+            _ => bail!("Invalid color. Accepted values are: always, default, never"),
+        }
+    }
+}
+
+impl ToString for Color {
+    fn to_string(&self) -> String {
+        format!("{self:?}")
+    }
+}
+
 /// A tool to help keep track of performance changes over time.
 #[derive(Parser, Debug)]
 #[command()]
@@ -175,6 +208,14 @@ pub struct Args {
     /// Show all lines, even those without a change.
     #[arg(short, long, default_value_t = false)]
     pub all: bool,
+    /// Whether the output should be colored or not.
+    ///
+    /// Accepted values are:
+    ///  * `always`: The output will always be colored (default)
+    ///  * `default`: The output is colored only if the output is a tty
+    ///  * `never`: The output is never colored
+    #[arg(short, long, default_value_t)]
+    pub color: Color,
     /// By which field to sort by.
     ///
     /// Accepted values are:
@@ -298,8 +339,7 @@ impl Args {
     fn check_input_length(&self) -> Result<()> {
         if self.inputs.is_empty() {
             bail!("No input file")
-        } else {
-            Ok(())
         }
+        Ok(())
     }
 }
