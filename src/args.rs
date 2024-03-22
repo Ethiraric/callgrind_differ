@@ -2,6 +2,7 @@ use std::{path::Path, str::FromStr};
 
 use anyhow::{bail, Result};
 use clap::Parser;
+use itertools::Itertools;
 
 /// The field on which to sort the output by.
 #[derive(Debug, Clone, Copy)]
@@ -132,7 +133,7 @@ impl ToString for RelativeTo {
 }
 
 /// What to show for each data column.
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Show {
     /// All columns.
     #[default]
@@ -249,8 +250,10 @@ impl Args {
     ///
     /// # Returns
     /// If all arguments are well-formed, returns an `Ok`. Otherwise, returns an `Err`.
-    pub fn validated(self) -> Result<Self> {
+    pub fn validated(mut self) -> Result<Self> {
         self.check_csv_names_count()?;
+        self.check_input_length()?;
+        self.sanitize_show();
         Ok(self)
     }
 
@@ -271,5 +274,32 @@ impl Args {
             }
         }
         Ok(())
+    }
+
+    /// Sanitize `show`.
+    ///
+    /// If `All` is specified, replace with individual columns.
+    /// Otherwise, remove duplicates but keep ordering of first occurence.
+    fn sanitize_show(&mut self) {
+        if self.show.is_empty() || self.show.iter().contains(&Show::All) {
+            self.show = vec![Show::IRCountDiff, Show::PercentageDiff, Show::IRCount];
+        } else {
+            let mut new_show = vec![];
+            for show in &self.show {
+                if !new_show.contains(show) {
+                    new_show.push(*show);
+                }
+            }
+            self.show = new_show;
+        }
+    }
+
+    /// Make sure we are provided with 1 positional argument at least.
+    fn check_input_length(&self) -> Result<()> {
+        if self.inputs.is_empty() {
+            bail!("No input file")
+        } else {
+            Ok(())
+        }
     }
 }
