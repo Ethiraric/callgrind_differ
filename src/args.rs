@@ -214,7 +214,7 @@ pub struct Args {
     ///  * `always`: The output will always be colored (default)
     ///  * `default`: The output is colored only if the output is a tty
     ///  * `never`: The output is never colored
-    #[arg(short, long, default_value_t)]
+    #[arg(short, long, default_value = "always")]
     pub color: Color,
     /// By which field to sort by.
     ///
@@ -235,7 +235,7 @@ pub struct Args {
     /// column0       // Sort by ascending ir for the first column
     /// -column3      // Sort by descending ir for the 4th column
     /// ```
-    #[arg(long, default_value_t)]
+    #[arg(long, default_value = "symbol")]
     pub sort_by: SortBy,
     /// Path to an output file in which to write the IR as CSV.
     #[arg(long, default_value_t)]
@@ -257,7 +257,7 @@ pub struct Args {
     ///   * `last`: Differences are shown relative to the last column.
     ///   * `previous`: Differences are shown relative to the column preceding it.
     ///   * `columnX`: With `X` a number, relative to the X-th column (0-indexed).
-    #[arg(long, default_value_t)]
+    #[arg(long, default_value = "first")]
     pub relative_to: RelativeTo,
     /// A comma-separated list of what to show for each column of data.
     ///

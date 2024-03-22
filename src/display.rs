@@ -102,6 +102,7 @@ impl<'a> Displayer<'a> {
                 print_n('-', self.run_width as usize);
             }
         }
+        println!();
     }
 
     /// Show the "Total IR" line.
@@ -113,9 +114,11 @@ impl<'a> Displayer<'a> {
             if self.is_ref_column(i) {
                 print_right(&s, self.max_total_ir_width as usize);
             } else {
-                print_right(&s, self.run_width as usize);
+                let reference_ir = self.get_reference_total_ir_for(i);
+                self.show_run_details(*ir, reference_ir);
             }
         }
+        println!();
     }
 
     /// Display the row with details for a single symbol.
@@ -127,23 +130,27 @@ impl<'a> Displayer<'a> {
                 // If it's the reference column, just print the IR count.
                 self.show_symbol_ir(*ir);
             } else {
-                // Otherwise, walk through the columns to display.
                 let reference_ir = self.get_reference_ir_for(i, symbol);
-                for (i, x) in self.config.show.iter().enumerate() {
-                    if i != 0 {
-                        // Print a space between that value and the previous one.
-                        print!(" ");
-                    }
-                    match x {
-                        Show::IRCount => self.show_symbol_ir(*ir),
-                        Show::PercentageDiff => self.show_symbol_percentdff(*ir, reference_ir),
-                        Show::IRCountDiff => self.show_symbol_irdff(*ir, reference_ir),
-                        Show::All => unreachable!(),
-                    }
-                }
+                self.show_run_details(*ir, reference_ir);
             }
         }
         println!();
+    }
+
+    /// Display the columns (as per `--show`) with the given details.
+    fn show_run_details(&self, ir: u64, reference_ir: u64) {
+        for (i, x) in self.config.show.iter().enumerate() {
+            if i != 0 {
+                // Print a space between that value and the previous one.
+                print!(" ");
+            }
+            match x {
+                Show::IRCount => self.show_symbol_ir(ir),
+                Show::PercentageDiff => self.show_symbol_percentdff(ir, reference_ir),
+                Show::IRCountDiff => self.show_symbol_irdff(ir, reference_ir),
+                Show::All => unreachable!(),
+            }
+        }
     }
 
     /// Display the IR count, correctly aligned.
@@ -156,7 +163,7 @@ impl<'a> Displayer<'a> {
     fn show_symbol_irdff(&self, ir: u64, reference_ir: u64) {
         let diff = ir.abs_diff(reference_ir);
         if diff == 0 {
-            print_right("0", (self.max_total_ir_width + 1) as usize);
+            print_right("-", (self.max_total_ir_width + 1) as usize);
         } else if ir > reference_ir {
             // Increase, show red.
             print!("\x1B[31m+");
@@ -183,22 +190,22 @@ impl<'a> Displayer<'a> {
         };
 
         if diff == 0 {
-            print_right("0.000%", (PERCENTDIFF_WIDTH + 1) as usize);
+            print_right("- ", PERCENTDIFF_WIDTH as usize);
         } else if reference_ir > ir {
             // Decrease, show green.
             print!("\x1B[32m-");
             let s = format!("{percent:7.3}%");
-            print_right(&s, PERCENTDIFF_WIDTH as usize);
+            print_right(&s, (PERCENTDIFF_WIDTH - 1) as usize);
             print!("\x1B[0m");
         } else {
             // Increase, show red
             if percent < 1000.0 {
-                print!("\x1B[32m+");
+                print!("\x1B[31m+");
                 let s = format!("{percent:7.3}%");
-                print_right(&s, PERCENTDIFF_WIDTH as usize);
+                print_right(&s, (PERCENTDIFF_WIDTH - 1) as usize);
             } else {
                 // Too high an increase, show as bold red ratio.
-                print!("\x1B[32;1m+");
+                print!("\x1B[31;1m");
                 let ratio = percent / 100.0;
                 let s = format!("{ratio:7.3}x");
                 print_right(&s, PERCENTDIFF_WIDTH as usize);
@@ -237,10 +244,9 @@ impl<'a> Displayer<'a> {
         };
 
         self.run_width = ir + // <ir>
-             1 +              // ` `
              ir_diff +        // <ir-diff>
-             1 +              // ` `
-             percent_diff; // <%>
+             percent_diff +   // <%>
+             ((self.config.show.len() - 1) as u32); // spaces
 
         self.line_width = self.max_symbol_width + // <symbol>
             3 +                 // ` | `
@@ -263,6 +269,15 @@ impl<'a> Displayer<'a> {
             symbol.irs[i - 1]
         } else {
             symbol.irs[self.reference_column as usize]
+        }
+    }
+
+    /// Get the reference total IR count for the given run.
+    fn get_reference_total_ir_for(&self, i: usize) -> u64 {
+        if self.reference_column == u32::MAX {
+            self.records.runs_total_irs[i - 1]
+        } else {
+            self.records.runs_total_irs[self.reference_column as usize]
         }
     }
 }
