@@ -2,7 +2,7 @@ use std::{fs::File, io::BufReader, path::Path};
 
 use anyhow::{bail, Result};
 
-use crate::args::{SortBy, SortByField, SortByOrder};
+use crate::args::{SortBy, SortByField, SortByOrder, StringReplacement};
 
 /// Annotations of a run of a binary.
 #[derive(Default)]
@@ -54,8 +54,14 @@ impl Run {
     }
 
     /// Load a run from a `callgrind_annotate` output file.
-    pub fn from_callgrind_annotate_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        Ok(crate::callgrind::parse(BufReader::new(File::open(path)?)))
+    pub fn from_callgrind_annotate_file<P: AsRef<Path>>(
+        path: P,
+        replacements: &[StringReplacement],
+    ) -> Result<Self> {
+        Ok(crate::callgrind::parse(
+            BufReader::new(File::open(path)?),
+            replacements,
+        ))
     }
 }
 

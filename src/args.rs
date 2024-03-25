@@ -1,4 +1,4 @@
-use std::{path::Path, str::FromStr};
+use std::{borrow::Cow, path::Path, str::FromStr};
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -201,6 +201,46 @@ impl ToString for Color {
     }
 }
 
+/// A string replacement to perform on a symbol name.
+#[derive(Default, Debug, Clone)]
+pub struct StringReplacement {
+    /// The string to look for.
+    from: String,
+    /// What it will be replaced with.
+    to: String,
+}
+
+impl StringReplacement {
+    /// Perform the replacement on the given string.
+    pub fn perform<'a>(&self, s: Cow<'a, str>) -> Cow<'a, str> {
+        if s.find(&self.from).is_some() {
+            Cow::Owned(s.replace(&self.from, &self.to))
+        } else {
+            s
+        }
+    }
+}
+
+impl FromStr for StringReplacement {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.split_once('/') {
+            Some((from, to)) => Ok(Self {
+                from: from.to_string(),
+                to: to.to_string(),
+            }),
+            None => bail!("No '/' in string replacement"),
+        }
+    }
+}
+
+impl ToString for StringReplacement {
+    fn to_string(&self) -> String {
+        format!("{self:?}")
+    }
+}
+
 /// A tool to help keep track of performance changes over time.
 #[derive(Parser, Debug)]
 #[command()]
@@ -247,6 +287,12 @@ pub struct Args {
     /// names.).
     #[arg(long, num_args=0.., value_delimiter=',')]
     pub csv_names: Vec<String>,
+    /// A replacement to perform in the symbol names.
+    ///
+    /// The replacement has the form `foo/bar` and will replace any occurence of `foo` within the
+    /// symbol name by `bar`. This option can be repeated any number of times.
+    #[arg(long, num_args=0..)]
+    pub string_replace: Vec<StringReplacement>,
     /// Path to an output file in which to write a graph of the IR values. Currently unsupported.
     #[arg(long, default_value_t)]
     pub export_graph: String,

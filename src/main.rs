@@ -11,31 +11,33 @@ use anyhow::{bail, Result};
 use clap::Parser;
 
 use crate::{
-    args::{RelativeTo, SortByField},
+    args::{Args, RelativeTo, SortByField},
     display::display,
     runs::{Records, Run},
 };
-use args::Args;
 
 mod args;
 mod callgrind;
 mod display;
 mod runs;
 
-/// Transforms an array of record files into a [`Records`].
+/// Parse inputs from the configuration into a [`Records`].
 ///
 /// If the files are CSVs, then they are loaded as multiple runs. Otherwise, they are loaded as a
 /// single `callgrind_annotate` output file. Runs are loaded in order.
-fn inputs_to_records(inputs: &[String]) -> Result<Records> {
+fn parse_records(config: &Args) -> Result<Records> {
     let mut records = Records::new();
-    for input in inputs {
+    for input in &config.inputs {
         if Path::new(input)
             .extension()
             .map_or(false, |ext| ext.eq_ignore_ascii_case("csv"))
         {
             todo!("CSV Parsing");
         } else {
-            records.add_run(Run::from_callgrind_annotate_file(input)?);
+            records.add_run(Run::from_callgrind_annotate_file(
+                input,
+                &config.string_replace,
+            )?);
         }
     }
     Ok(records)
@@ -43,7 +45,7 @@ fn inputs_to_records(inputs: &[String]) -> Result<Records> {
 
 fn main() -> Result<()> {
     let config = Args::parse().validated()?;
-    let mut records = inputs_to_records(&config.inputs)?;
+    let mut records = parse_records(&config)?;
     if records.n_runs() == 0 {
         bail!("No input run");
     }

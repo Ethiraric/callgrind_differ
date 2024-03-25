@@ -28,6 +28,7 @@ it. The instruction count is repeated for all other columns.
   * Any column can be taken as the reference, including the ability to compare each column to the one immediately
     preceding it
   * Can show instruction count, the difference in instruction count and percentage of change (or ratio if >1000%)
+  * String replacement in symbols.
 
 # How to use
 ### Example scenario: Trying to optimize
@@ -118,15 +119,26 @@ Arguments:
   [INPUTS]...  `callgrind_annotate` files or CSV file. Positional arguments
 
 Options:
-  -a, --all                          Show all lines, even those without a change
-  -c, --color <COLOR>                Whether the output should be colored or not [default: always]
-      --sort-by <SORT_BY>            By which field to sort by [default: symbol]
-      --csv-export <CSV_EXPORT>      Path to an output file in which to write the IR as CSV [default: ]
-      --csv-names [<CSV_NAMES>...]   A comma-separated list of column names for the CSV export
-      --export-graph <EXPORT_GRAPH>  Path to an output file in which to write a graph of the IR values. Currently unsupported [default: ]
-      --relative-to <RELATIVE_TO>    The column which is the reference for IR. Other columns have diffs relative to it [default: first]
-      --show [<SHOW>...]             A comma-separated list of what to show for each column of data
-  -h, --help                         Print help (see more with '--help')
+  -a, --all
+          Show all lines, even those without a change
+  -c, --color <COLOR>
+          Whether the output should be colored or not [default: always]
+      --sort-by <SORT_BY>
+          By which field to sort by [default: symbol]
+      --csv-export <CSV_EXPORT>
+          Path to an output file in which to write the IR as CSV [default: ]
+      --csv-names [<CSV_NAMES>...]
+          A comma-separated list of column names for the CSV export
+      --string-replace [<STRING_REPLACE>...]
+          A replacement to perform in the symbol names
+      --export-graph <EXPORT_GRAPH>
+          Path to an output file in which to write a graph of the IR values. Currently unsupported [default: ]
+      --relative-to <RELATIVE_TO>
+          The column which is the reference for IR. Other columns have diffs relative to it [default: first]
+      --show [<SHOW>...]
+          A comma-separated list of what to show for each column of data
+  -h, --help
+          Print help (see more with '--help')
 ```
 
 More details can be obtained with `callgrind_differ --help`.

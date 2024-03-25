@@ -1,6 +1,8 @@
+use std::borrow::Cow;
+
 use itertools::Itertools;
 
-use crate::runs::Run;
+use crate::{args::StringReplacement, runs::Run};
 
 /// Parse the total IR line.
 ///
@@ -53,7 +55,7 @@ fn parse_fn_ir_line(line: &str) -> (String, u64) {
 }
 
 /// Parse a `callgrind_annotate` file and return a `Run` from it.
-pub fn parse<R: std::io::BufRead>(input: R) -> Run {
+pub fn parse<R: std::io::BufRead>(input: R, replacements: &[StringReplacement]) -> Run {
     let mut run = Run::new();
     let mut lines = input
         .lines()
@@ -68,6 +70,11 @@ pub fn parse<R: std::io::BufRead>(input: R) -> Run {
         .take_while(|line| line.trim().chars().next().unwrap_or('\0').is_ascii_digit())
         .map(|line| parse_fn_ir_line(&line))
     {
+        let symbol = replacements
+            .iter()
+            .fold(Cow::Owned(symbol), |symbol, replacement| {
+                replacement.perform(symbol)
+            });
         run.add_ir(&symbol, ir);
     }
 
