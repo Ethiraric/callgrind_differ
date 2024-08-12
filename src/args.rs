@@ -1,4 +1,4 @@
-use std::{borrow::Cow, path::Path, str::FromStr};
+use std::{borrow::Cow, fmt::Display, path::Path, str::FromStr};
 
 use anyhow::{bail, Result};
 use clap::Parser;
@@ -85,9 +85,9 @@ impl FromStr for SortBy {
     }
 }
 
-impl ToString for SortBy {
-    fn to_string(&self) -> String {
-        format!("{self:?}")
+impl Display for SortBy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
@@ -126,9 +126,9 @@ impl FromStr for RelativeTo {
     }
 }
 
-impl ToString for RelativeTo {
-    fn to_string(&self) -> String {
-        format!("{self:?}")
+impl Display for RelativeTo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
@@ -162,9 +162,9 @@ impl FromStr for Show {
     }
 }
 
-impl ToString for Show {
-    fn to_string(&self) -> String {
-        format!("{self:?}")
+impl Display for Show {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
@@ -195,9 +195,9 @@ impl FromStr for Color {
     }
 }
 
-impl ToString for Color {
-    fn to_string(&self) -> String {
-        format!("{self:?}")
+impl Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
@@ -235,9 +235,9 @@ impl FromStr for StringReplacement {
     }
 }
 
-impl ToString for StringReplacement {
-    fn to_string(&self) -> String {
-        format!("{self:?}")
+impl Display for StringReplacement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 
