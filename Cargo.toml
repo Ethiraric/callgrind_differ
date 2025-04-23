@@ -2,8 +2,11 @@
 name = "callgrind_differ"
 version = "0.0.1"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "A tool to compare outputs of `callgrind_annotate` over time. "
+categories = [ "command-line-utilities", "development-tools::profiling" ]
+repository = "https://github.com/Ethiraric/callgrind_differ"
+readme = "README.md"
 
 [dependencies]
 anyhow = { version = "1.0.79", features = ["backtrace"] }
